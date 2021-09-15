@@ -1,6 +1,7 @@
 /* @flow strict-local */
 // $FlowFixMe[untyped-import]
 import parseMarkdown from 'zulip-markdown-parser';
+import invariant from 'invariant';
 
 import * as logging from '../utils/logging';
 import type {
@@ -9,6 +10,9 @@ import type {
   GlobalState,
   Narrow,
   Outbox,
+  PmOutbox,
+  StreamOutbox,
+  Stream,
   UserOrBot,
   UserId,
   Action,
@@ -21,11 +25,11 @@ import {
   DELETE_OUTBOX_MESSAGE,
   MESSAGE_SEND_COMPLETE,
 } from '../actionConstants';
-import { getAuth } from '../selectors';
+import { getAuth, getStreamsByName } from '../selectors';
 import * as api from '../api';
 import { getAllUsersById, getOwnUser } from '../users/userSelectors';
 import { getUsersAndWildcards } from '../users/userHelpers';
-import { caseNarrowPartial } from '../utils/narrow';
+import { caseNarrowPartial, isConversationNarrow } from '../utils/narrow';
 import { BackoffMachine } from '../utils/async';
 import { recipientsOfPrivateMessage, streamNameOfStreamMessage } from '../utils/recipient';
 
@@ -124,32 +128,34 @@ const recipientsFromIds = (ids, allUsersById, ownUser) => {
   return result;
 };
 
-type DataFromNarrow = SubsetProperties<
-  Outbox,
-  {| type: mixed, display_recipient: mixed, subject: mixed |},
->;
+// prettier-ignore
+type DataFromNarrow =
+  | SubsetProperties<PmOutbox, {| type: mixed, display_recipient: mixed, subject: mixed |}>
+  | SubsetProperties<StreamOutbox, {| type: mixed, stream_id: mixed, display_recipient: mixed, subject: mixed |}>;
 
-const extractTypeToAndSubjectFromNarrow = (
-  narrow: Narrow,
+const outboxPropertiesForNarrow = (
+  destinationNarrow: Narrow,
+  streamsByName: Map<string, Stream>,
   allUsersById: Map<UserId, UserOrBot>,
   ownUser: UserOrBot,
 ): DataFromNarrow =>
-  caseNarrowPartial(narrow, {
+  caseNarrowPartial(destinationNarrow, {
     pm: ids => ({
       type: 'private',
       display_recipient: recipientsFromIds(ids, allUsersById, ownUser),
       subject: '',
     }),
 
-    // TODO: we shouldn't ever be passing a whole-stream narrow here;
-    //   ensure we don't, then remove this case
-    stream: name => ({ type: 'stream', display_recipient: name, subject: '(no topic)' }),
-
-    topic: (streamName, topic) => ({
-      type: 'stream',
-      display_recipient: streamName,
-      subject: topic,
-    }),
+    topic: (streamName, topic) => {
+      const stream = streamsByName.get(streamName);
+      invariant(stream, 'narrow must be known stream');
+      return {
+        type: 'stream',
+        stream_id: stream.stream_id,
+        display_recipient: stream.name,
+        subject: topic,
+      };
+    },
   });
 
 const getContentPreview = (content: string, state: GlobalState): string => {
@@ -167,10 +173,11 @@ const getContentPreview = (content: string, state: GlobalState): string => {
   }
 };
 
-export const addToOutbox = (narrow: Narrow, content: string): ThunkAction<Promise<void>> => async (
-  dispatch,
-  getState,
-) => {
+export const addToOutbox = (
+  destinationNarrow: Narrow,
+  content: string,
+): ThunkAction<Promise<void>> => async (dispatch, getState) => {
+  invariant(isConversationNarrow(destinationNarrow), 'destination narrow must be conversation');
   const state = getState();
   const ownUser = getOwnUser(state);
 
@@ -178,7 +185,12 @@ export const addToOutbox = (narrow: Narrow, content: string): ThunkAction<Promis
   dispatch(
     messageSendStart({
       isSent: false,
-      ...extractTypeToAndSubjectFromNarrow(narrow, getAllUsersById(state), ownUser),
+      ...outboxPropertiesForNarrow(
+        destinationNarrow,
+        getStreamsByName(state),
+        getAllUsersById(state),
+        ownUser,
+      ),
       markdownContent: content,
       content: getContentPreview(content, state),
       timestamp: localTime,

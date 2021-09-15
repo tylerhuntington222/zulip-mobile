@@ -167,12 +167,7 @@ export type TopicExtended = {|
  * Properties in common among the two different flavors of a
  * `Outbox`: `PmOutbox` and `StreamOutbox`.
  */
-// TODO: This distinction between `PmOutbox` and `StreamOutbox` doesn't yet
-//   function as fully as `PmMessage` and `StreamMessage`: for properties
-//   like `type` and `display_recipient` where the types differ between
-//   `PmMessage` and `StreamMessage`, it currently loses the information
-//   that those differences are connected to each other.
-export type OutboxBase = $ReadOnly<{|
+type OutboxBase = $ReadOnly<{|
   /** Used for distinguishing from a `Message` object. */
   isOutbox: true,
 
@@ -196,20 +191,14 @@ export type OutboxBase = $ReadOnly<{|
     // `Message` but potentially separately.
     Message,
     {|
-      // TODO: Some of these have different types on `PmMessage` vs.
-      //   `StreamMessage`; move those to `PmOutbox` and `StreamOutbox`
-      //   respectively, to match that distinction here.
       avatar_url: mixed,
       content: mixed,
-      display_recipient: mixed,
       id: mixed,
       reactions: mixed,
       sender_id: mixed,
       sender_email: mixed,
       sender_full_name: mixed,
-      subject: mixed,
       timestamp: mixed,
-      type: mixed,
     |},
   >,
 |}>;
@@ -217,7 +206,14 @@ export type OutboxBase = $ReadOnly<{|
 export type PmOutbox = $ReadOnly<{|
   ...OutboxBase,
 
-  ...SubsetProperties<PmMessage, {||}>,
+  ...SubsetProperties<
+    PmMessage,
+    {|
+      type: mixed,
+      display_recipient: mixed,
+      subject: mixed,
+    |},
+  >,
 |}>;
 
 export type StreamOutbox = $ReadOnly<{|
@@ -227,10 +223,18 @@ export type StreamOutbox = $ReadOnly<{|
   //   in the Outbox values we create; compare a1fad7ca9, for sender_id.
   //
   //   Once it is required, it should move from here to the second type
-  //   argument passed to `SubsetProperties` of `StreamMessage`, below.
+  //   argument passed to `SubsetProperties` of `StreamMessage`, below;
+  //   and we can also drop the hack line about it in `MessageLike`.
   stream_id?: number,
 
-  ...SubsetProperties<StreamMessage, {||}>,
+  ...SubsetProperties<
+    StreamMessage,
+    {|
+      type: mixed,
+      display_recipient: mixed,
+      subject: mixed,
+    |},
+  >,
 |}>;
 
 /**

@@ -391,6 +391,17 @@ export const isMentionedNarrow = (narrow?: Narrow): boolean =>
   !!narrow && caseNarrowDefault(narrow, { mentioned: () => true }, () => false);
 
 /**
+ * Whether the narrow represents a single whole conversation.
+ *
+ * A conversation is the smallest unit that discussions are threaded into:
+ * either a specific topic in a stream, or a PM thread (either 1:1 or group).
+ *
+ * When sending a message, its destination is identified by a conversation.
+ */
+export const isConversationNarrow = (narrow: Narrow): boolean =>
+  caseNarrowDefault(narrow, { topic: () => true, pm: () => true }, () => false);
+
+/**
  * Convert the narrow into the form used in the Zulip API at get-messages.
  */
 export const apiNarrowOfNarrow = (
@@ -467,7 +478,14 @@ export const isMessageInNarrow = (
     // Adding a case here?  Be sure to add to getNarrowsForMessage, too.
   });
 
-export const canSendToNarrow = (narrow: Narrow): boolean =>
+/**
+ * Whether we show the compose box on this narrow's message list.
+ *
+ * This is really a UI choice that belongs to a specific part of the UI.
+ * It's here for now because several files refer to it.
+ */
+// TODO make this appropriately part of the UI code.
+export const showComposeBoxOnNarrow = (narrow: Narrow): boolean =>
   caseNarrow(narrow, {
     pm: () => true,
     stream: () => true,

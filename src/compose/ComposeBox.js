@@ -8,6 +8,7 @@ import type { LayoutEvent } from 'react-native/Libraries/Types/CoreEventTypes';
 import TextInputReset from 'react-native-text-input-reset';
 import { type EdgeInsets } from 'react-native-safe-area-context';
 import { compose } from 'redux';
+import invariant from 'invariant';
 
 import { withSafeAreaInsets } from '../react-native-safe-area-context';
 import type { ThemeData } from '../styles';
@@ -31,6 +32,7 @@ import { FloatingActionButton, Input } from '../common';
 import { showToast } from '../utils/info';
 import { IconDone, IconSend } from '../common/Icons';
 import {
+  isConversationNarrow,
   isStreamNarrow,
   isStreamOrTopicNarrow,
   isTopicNarrow,
@@ -43,7 +45,6 @@ import getComposeInputPlaceholder from './getComposeInputPlaceholder';
 import NotSubscribed from '../message/NotSubscribed';
 import AnnouncementOnly from '../message/AnnouncementOnly';
 import MentionWarnings from './MentionWarnings';
-
 import { getAuth, getIsAdmin, getStreamInNarrow, getVideoChatProvider } from '../selectors';
 import {
   getIsActiveStreamSubscribed,
@@ -66,9 +67,12 @@ type SelectorProps = {|
 |};
 
 type OuterProps = $ReadOnly<{|
+  /** The narrow shown in the message list.  Must be a conversation or stream. */
+  // In particular `getDestinationNarrow` makes assumptions about the narrow
+  // (and other code might too.)
   narrow: Narrow,
 
-  onSend: (string, Narrow) => void,
+  onSend: (message: string, destinationNarrow: Narrow) => void,
 
   isEditing: boolean,
 
@@ -391,15 +395,16 @@ class ComposeBoxInner extends PureComponent<Props, State> {
       const topic = this.state.topic.trim();
       return topicNarrow(streamName, topic || '(no topic)');
     }
+    invariant(isConversationNarrow(narrow), 'destination narrow must be conversation');
     return narrow;
   };
 
   handleSend = () => {
     const { dispatch } = this.props;
     const { message } = this.state;
-    const narrow = this.getDestinationNarrow();
+    const destinationNarrow = this.getDestinationNarrow();
 
-    this.props.onSend(message, narrow);
+    this.props.onSend(message, destinationNarrow);
 
     this.setMessageInputValue('');
 
@@ -407,7 +412,7 @@ class ComposeBoxInner extends PureComponent<Props, State> {
       this.mentionWarnings.current.clearMentionWarnings();
     }
 
-    dispatch(sendTypingStop(narrow));
+    dispatch(sendTypingStop(destinationNarrow));
   };
 
   inputMarginPadding = {
