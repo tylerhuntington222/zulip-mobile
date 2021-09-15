@@ -1,6 +1,7 @@
 # OSX
 #
 .DS_Store
+.idea/
 
 # Xcode
 #
@@ -66,6 +67,12 @@ npm-debug.log
 
 # CocoaPods
 /ios/Pods
+
+# Podfile
+/ios/Podfile.lock
+
+#Xcode
+ios/ZulipMobile.xcodeproj/project.xcworkspace/
 
 # Transifex, for a maintainer syncing translations up and down
 /.transifexrc
