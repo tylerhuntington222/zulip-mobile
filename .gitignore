@@ -68,9 +68,6 @@ npm-debug.log
 # CocoaPods
 /ios/Pods
 
-# Podfile
-/ios/Podfile.lock
-
 #Xcode
 ios/ZulipMobile.xcodeproj/project.xcworkspace/
 
