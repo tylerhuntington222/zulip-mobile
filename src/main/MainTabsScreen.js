@@ -16,7 +16,7 @@ import HomeScreen from './HomeScreen';
 import StreamTabsScreen from './StreamTabsScreen';
 import PmConversationsScreen from '../pm-conversations/PmConversationsScreen';
 import SettingsScreen from '../settings/SettingsScreen';
-import { IconInbox, IconSettings, IconStream } from '../common/Icons';
+import { IconInbox, IconSettings, IconStream, IconHome, IconPersonCircle } from '../common/Icons';
 import { OwnAvatar, OfflineNotice } from '../common';
 import IconUnreadConversations from '../nav/IconUnreadConversations';
 import ProfileScreen from '../account-info/ProfileScreen';
@@ -69,7 +69,7 @@ export default function MainTabsScreen(props: Props): Node {
           component={HomeScreen}
           options={{
             tabBarLabel: 'Home',
-            tabBarIcon: ({ color }) => <IconInbox size={24} color={color} />,
+            tabBarIcon: ({ color }) => <IconHome size={24} color={color} />,
           }}
         />
         <Tab.Screen
@@ -101,7 +101,8 @@ export default function MainTabsScreen(props: Props): Node {
           component={ProfileScreen}
           options={{
             tabBarLabel: 'Profile',
-            tabBarIcon: ({ color }) => <OwnAvatar size={24} />,
+            // tabBarIcon: ({ color }) => <OwnAvatar size={24} />,
+              tabBarIcon: ({ color }) => <IconPersonCircle size={28} color={color} />,
           }}
         />
       </Tab.Navigator>

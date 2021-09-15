@@ -6,7 +6,7 @@ import { View } from 'react-native';
 
 import { useSelector } from '../react-redux';
 import { getUnreadPmsTotal, getUnreadHuddlesTotal } from '../selectors';
-import { IconPeople } from '../common/Icons';
+import {IconChatBubbleEllipses} from '../common/Icons';
 import { CountOverlay } from '../common';
 
 type Props = $ReadOnly<{|
@@ -22,7 +22,7 @@ export default function IconUnreadConversations(props: Props): Node {
   return (
     <View>
       <CountOverlay unreadCount={unreadCount}>
-        <IconPeople size={24} color={color} />
+        <IconChatBubbleEllipses size={28} color={color} />
       </CountOverlay>
     </View>
   );
